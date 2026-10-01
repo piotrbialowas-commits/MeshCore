@@ -240,7 +240,7 @@ private:
   }
 
   void renderMessages(DisplayDriver& d) {
-    title(d, "WIADOMOSCI");
+    title(d, "WIADOMOŚCI");
     char buf[48];
     snprintf(buf, sizeof(buf), "Nieprzeczytane: %d", _task->getMsgCount());
     row(d, 79, "Status", buf);
@@ -248,10 +248,10 @@ private:
     row(d, 105, "Kolejka aplikacji", buf);
     if (_task->getMsgCount() > 0) {
       d.setTextSize(2);
-      d.drawTextCentered(100, 145, "NOWA WIADOMOSC");
+      d.drawTextCentered(100, 145, "NOWA WIADOMOŚĆ");
     } else {
       d.setTextSize(1);
-      d.drawTextCentered(100, 145, "Brak nowych wiadomosci");
+      d.drawTextCentered(100, 145, "Brak nowych wiadomości");
     }
     drawFooter(d, "v DALEJ", "o OTWORZ");
   }
@@ -262,7 +262,7 @@ private:
     uint32_t now = _rtc->getCurrentTime();
     if (count <= 0) {
       d.setTextSize(1);
-      d.drawTextCentered(100, 110, "Brak slyszanych nodow");
+      d.drawTextCentered(100, 110, "Brak słyszanych nodów");
     } else {
       int y = 72;
       for (int i = 0; i < count && i < 5; ++i, y += 23) {
@@ -282,9 +282,9 @@ private:
     title(d, n.name);
     char buf[64], age[16];
     ageText(_rtc->getCurrentTime(), n.recv_timestamp, age, sizeof(age));
-    row(d, 80, "Ostatnio slyszany", age);
+    row(d, 80, "Ostatnio słyszany", age);
     snprintf(buf, sizeof(buf), "%u", n.path_len == 0xFF ? 0 : n.path_len);
-    row(d, 104, "Dlugosc sciezki", buf);
+    row(d, 104, "Długość ścieżki", buf);
     row(d, 128, "RSSI", "brak danych");
     row(d, 152, "GPS", "brak danych");
     drawFooter(d, "v NAST.", "o WSTECZ");
@@ -304,27 +304,27 @@ private:
 
   void renderRadioMenu(DisplayDriver& d) {
     title(d, "RADIO / OPCJE");
-    const char* items[] = {"WYSLIJ ADVERT", "MOC TX", "PARAMETRY RADIA", "PRZYWROC OSTATNIE", "WSTECZ"};
+    const char* items[] = {"WYŚLIJ ADVERT", "MOC TX", "PARAMETRY RADIA", "PRZYWRÓĆ OSTATNIE", "WSTECZ"};
     int y = 67;
     for (int i=0;i<5;i++,y+=23) row(d, y, items[i], ">", i == _sel);
     drawFooter(d, "v DALEJ", "o WYBIERZ");
   }
 
   void renderAdvertConfirm(DisplayDriver& d) {
-    title(d, "WYSLIJ ADVERT");
+    title(d, "WYŚLIJ ADVERT");
     d.setTextSize(2);
-    d.drawTextCentered(100, 92, "Wyslac komunikat");
+    d.drawTextCentered(100, 92, "Wysłać komunikat");
     d.drawTextCentered(100, 116, "ADVERT w sieci?");
     centeredChoice(d, "TAK", "NIE");
     drawFooter(d, "v ZMIEN", "o POTWIERDZ");
   }
 
   void renderAdvertSent(DisplayDriver& d) {
-    title(d, "WYSLIJ ADVERT");
+    title(d, "WYŚLIJ ADVERT");
     d.setTextSize(2);
-    d.drawTextCentered(100, 104, "ADVERT WYSLANY!");
+    d.drawTextCentered(100, 104, "ADVERT WYSŁANY!");
     d.setTextSize(1);
-    d.drawTextCentered(100, 135, "Urzadzenie ogloszone");
+    d.drawTextCentered(100, 135, "Urządzenie ogłoszone");
     d.drawTextCentered(100, 155, "w sieci.");
     drawFooter(d, "", "o OK");
   }
@@ -353,9 +353,9 @@ private:
   }
 
   void renderRadioRestore(DisplayDriver& d) {
-    title(d, "PRZYWROC OSTATNIE");
+    title(d, "PRZYWRÓĆ OSTATNIE");
     d.setTextSize(1);
-    d.drawTextCentered(100, 87, "Przywrocic poprzednia");
+    d.drawTextCentered(100, 87, "Przywrócić poprzednią");
     d.drawTextCentered(100, 108, "moc nadajnika?");
     char buf[32];
     snprintf(buf, sizeof(buf), "TX: %d dBm", _previousTx);
@@ -368,7 +368,7 @@ private:
     title(d, "GPS / POZYCJA");
     LocationProvider* loc = _sensors ? _sensors->getLocationProvider() : NULL;
     bool on = _task->getGPSState();
-    row(d, 75, "Stan", on ? "AKTYWNY" : "WYLACZONY");
+    row(d, 75, "Stan", on ? "AKTYWNY" : "WYŁĄCZONY");
     if (!on || loc == NULL) {
       row(d, 98, "Satelity", "--");
       row(d, 121, "Lat", "BRAK DANYCH");
@@ -391,10 +391,10 @@ private:
 
   void renderGPSMenu(DisplayDriver& d) {
     title(d, "GPS / OPCJE");
-    const char* labels[] = {"GPS WL./WYL.", "ODSWIEZ POZYCJE", "WSTECZ"};
+    const char* labels[] = {"GPS WL./WYL.", "ODŚWIEŻ POZYCJĘ", "WSTECZ"};
     int y = 80;
     for (int i=0;i<3;i++,y+=30) {
-      const char* val = (i==0) ? (_task->getGPSState() ? "WL." : "WYL.") : ">";
+      const char* val = (i==0) ? (_task->getGPSState() ? "WŁ." : "WYŁ.") : ">";
       row(d, y, labels[i], val, i == _sel);
     }
     drawFooter(d, "v DALEJ", "o WYBIERZ");
@@ -404,11 +404,11 @@ private:
     title(d, "BLUETOOTH");
     d.setTextSize(2);
     if (!_task->isBluetoothEnabled()) {
-      d.drawTextCentered(100, 105, "WYLACZONY");
+      d.drawTextCentered(100, 105, "WYŁĄCZONY");
     } else if (_task->hasConnection()) {
-      d.drawTextCentered(100, 105, "POLACZONY");
+      d.drawTextCentered(100, 105, "POŁĄCZONY");
     } else {
-      d.drawTextCentered(100, 96, "NIEPOLACZONY");
+      d.drawTextCentered(100, 96, "NIEPOŁĄCZONY");
       d.setTextSize(1);
       char buf[32];
       snprintf(buf, sizeof(buf), "PIN: %06lu", (unsigned long)the_mesh.getBLEPin());
@@ -423,7 +423,7 @@ private:
     const char* labels[] = {"BLE WL./WYL.", "ROZLACZ", "WSTECZ"};
     int y = 80;
     for (int i=0;i<3;i++,y+=30) {
-      const char* val = (i==0) ? (_task->isBluetoothEnabled() ? "WL." : "WYL.") : ">";
+      const char* val = (i==0) ? (_task->isBluetoothEnabled() ? "WŁ." : "WYŁ.") : ">";
       row(d, y, labels[i], val, i == _sel);
     }
     drawFooter(d, "v DALEJ", "o WYBIERZ");
@@ -431,8 +431,8 @@ private:
 
   void renderSettings(DisplayDriver& d) {
     title(d, "USTAWIENIA");
-    row(d, 79, "EKRAN / PODSW.", ">");
-    row(d, 104, "DZWIEK", _task->isBuzzerQuiet() ? "WYL." : "WL.");
+    row(d, 79, "EKRAN / PODŚW.", ">");
+    row(d, 104, "DŹWIĘK", _task->isBuzzerQuiet() ? "WYŁ." : "WŁ.");
     row(d, 129, "ZASILANIE", ">");
     row(d, 154, "ZAAWANSOWANE", ">");
     drawFooter(d, "v DALEJ", "o OPCJE");
@@ -440,26 +440,26 @@ private:
 
   void renderSettingsMenu(DisplayDriver& d) {
     title(d, "USTAWIENIA");
-    const char* labels[] = {"EKRAN / PODSW.", "DZWIEK", "ZASILANIE", "ZAAWANSOWANE", "WSTECZ"};
+    const char* labels[] = {"EKRAN / PODŚW.", "DŹWIĘK", "ZASILANIE", "ZAAWANSOWANE", "WSTECZ"};
     int y = 70;
     for (int i=0;i<5;i++,y+=24) row(d, y, labels[i], ">", i == _sel);
     drawFooter(d, "v DALEJ", "o WYBIERZ");
   }
 
   void renderDisplayMenu(DisplayDriver& d) {
-    title(d, "EKRAN / PODSW.");
+    title(d, "EKRAN / PODŚW.");
     char autoOff[16]; snprintf(autoOff, sizeof(autoOff), "%d s", AUTO_OFF_MILLIS/1000);
-    const char* labels[] = {"FRONTLIGHT", "AUTO-WYGASZANIE", "PODSW. PRZY WIAD.", "POBUDKA KLAWISZEM", "TRYB ODSWIEZANIA", "WSTECZ"};
-    const char* vals[] = {_frontlight ? "WL." : "WYL.", autoOff, "WL.", "WL.", "NORMALNY", ">"};
+    const char* labels[] = {"FRONTLIGHT", "AUTO-WYGASZANIE", "PODŚW. PRZY WIAD.", "POBUDKA KLAWISZEM", "TRYB ODŚWIEŻANIA", "WSTECZ"};
+    const char* vals[] = {_frontlight ? "WŁ." : "WYŁ.", autoOff, "WŁ.", "WŁ.", "NORMALNY", ">"};
     int y = 62;
     for (int i=0;i<6;i++,y+=21) row(d, y, labels[i], vals[i], i == _sel);
     drawFooter(d, "v DALEJ", "o WYBIERZ");
   }
 
   void renderSoundMenu(DisplayDriver& d) {
-    title(d, "DZWIEK");
-    const char* labels[] = {"DZWIEK", "NOWA WIAD.", "PRYWATNE", "KANALOWE", "PRZYCISKI", "WSTECZ"};
-    const char* vals[] = {_task->isBuzzerQuiet() ? "WYL." : "WL.", "WL.", "OSOBNY", "KROTKI", "WYL.", ">"};
+    title(d, "DŹWIĘK");
+    const char* labels[] = {"DŹWIĘK", "NOWA WIAD.", "PRYWATNE", "KANALOWE", "PRZYCISKI", "WSTECZ"};
+    const char* vals[] = {_task->isBuzzerQuiet() ? "WYŁ." : "WŁ.", "WŁ.", "OSOBNY", "KROTKI", "WYŁ.", ">"};
     int y = 62;
     for (int i=0;i<6;i++,y+=21) row(d, y, labels[i], vals[i], i == _sel);
     drawFooter(d, "v DALEJ", "o WYBIERZ");
@@ -473,15 +473,15 @@ private:
     snprintf(volts, sizeof(volts), "%.2f V", mv/1000.0);
     snprintf(warn, sizeof(warn), "%u%%", _batteryWarnPct);
     row(d, 72, "Stan baterii", pct);
-    row(d, 96, "Napiecie", volts);
-    row(d, 120, "OSTRZEZENIE BATERII", warn, _sel==0);
+    row(d, 96, "Napięcie", volts);
+    row(d, 120, "OSTRZEŻENIE BATERII", warn, _sel==0);
     row(d, 144, "HIBERNACJA", ">", _sel==1);
     row(d, 168, "WSTECZ", ">", _sel==2);
     drawFooter(d, "v DALEJ", "o WYBIERZ");
   }
 
   void renderBatteryMenu(DisplayDriver& d) {
-    title(d, "OSTRZEZENIE BATERII");
+    title(d, "OSTRZEŻENIE BATERII");
     const int vals[] = {10,15,20,25};
     int y=75;
     for(int i=0;i<4;i++,y+=24){
@@ -496,32 +496,32 @@ private:
 
   void renderAdvancedMenu(DisplayDriver& d) {
     title(d, "ZAAWANSOWANE");
-    const char* labels[] = {"TEST SPRZETU", "WIADOMOSCI / PAMIEC", "DIAGNOSTYKA", "RESTART", "USTAWIENIA FABR.", "WSTECZ"};
+    const char* labels[] = {"TEST SPRZĘTU", "WIADOMOŚCI / PAMIĘĆ", "DIAGNOSTYKA", "RESTART", "USTAWIENIA FABR.", "WSTECZ"};
     int y=62;
     for(int i=0;i<6;i++,y+=21) row(d,y,labels[i],">",i==_sel);
     drawFooter(d, "v DALEJ", "o WYBIERZ");
   }
 
   void renderHwTest(DisplayDriver& d) {
-    title(d, "TEST SPRZETU");
+    title(d, "TEST SPRZĘTU");
     char batt[20]; snprintf(batt,sizeof(batt),"%.2f V",_task->getBattMilliVolts()/1000.0);
     row(d,65,"e-Ink","OK");
-    row(d,85,"FRONTLIGHT",_frontlight ? "OK" : "WYL.");
-    row(d,105,"BUZZER",_task->isBuzzerQuiet() ? "WYL." : "OK");
+    row(d,85,"FRONTLIGHT",_frontlight ? "OK" : "WYŁ.");
+    row(d,105,"BUZZER",_task->isBuzzerQuiet() ? "WYŁ." : "OK");
     row(d,125,"LoRa (SX1262)","OK");
-    row(d,145,"GPS",_task->getGPSState() ? "WL." : "WYL.");
-    row(d,165,"BLE",_task->isBluetoothEnabled() ? "OK" : "WYL.");
+    row(d,145,"GPS",_task->getGPSState() ? "WŁ." : "WYŁ.");
+    row(d,165,"BLE",_task->isBluetoothEnabled() ? "OK" : "WYŁ.");
     row(d,180,"BATERIA",batt);
     drawFooter(d, "v WSTECZ", "o PONOWNIE");
   }
 
   void renderMsgMemory(DisplayDriver& d) {
-    title(d, "WIADOMOSCI / PAMIEC");
+    title(d, "WIADOMOŚCI / PAMIĘĆ");
     char buf[32];
     snprintf(buf,sizeof(buf),"%d",_task->getMsgCount()); row(d,80,"Nieprzeczytane",buf);
     snprintf(buf,sizeof(buf),"%d/%d",the_mesh.getOfflineQueueLen(),OFFLINE_QUEUE_SIZE); row(d,110,"Kolejka aplikacji",buf);
     snprintf(buf,sizeof(buf),"%d",recentCount()); row(d,140,"Ostatnie nody",buf);
-    row(d,165,"Historia","zarzadza aplikacja");
+    row(d,165,"Historia","zarządza aplikacja");
     drawFooter(d, "v WSTECZ", "o OK");
   }
 
@@ -532,7 +532,7 @@ private:
     snprintf(buf,sizeof(buf),"%d",(int)board.getStartupReason()); row(d,81,"Reset reason",buf);
     snprintf(buf,sizeof(buf),"%lu",(unsigned long)radio_driver.getPacketsRecv()); row(d,101,"RX",buf);
     snprintf(buf,sizeof(buf),"%lu",(unsigned long)radio_driver.getPacketsSent()); row(d,121,"TX",buf);
-    snprintf(buf,sizeof(buf),"%lu",(unsigned long)radio_driver.getPacketsRecvErrors()); row(d,141,"Bledy",buf);
+    snprintf(buf,sizeof(buf),"%lu",(unsigned long)radio_driver.getPacketsRecvErrors()); row(d,141,"Błędy",buf);
     row(d,161,"MeshCore",FIRMWARE_VERSION);
     row(d,179,"PB & ChatGPT","v1.0");
     drawFooter(d, "v WSTECZ", "o ODSWIEZ");
@@ -541,7 +541,7 @@ private:
   void renderRestartConfirm(DisplayDriver& d) {
     title(d, "RESTART");
     d.setTextSize(2);
-    d.drawTextCentered(100,92,"Uruchomic urzadzenie");
+    d.drawTextCentered(100,92,"Uruchomić urządzenie");
     d.drawTextCentered(100,116,"ponownie?");
     centeredChoice(d,"TAK","NIE");
     drawFooter(d, "v ZMIEN", "o POTWIERDZ");
@@ -559,9 +559,9 @@ private:
   void renderFactoryResetConfirm(DisplayDriver& d) {
     title(d, "USTAWIENIA FABR.");
     d.setTextSize(1);
-    d.drawTextCentered(100,78,"Usunie konfiguracje radia,");
-    d.drawTextCentered(100,98,"tozsamosc, kontakty,");
-    d.drawTextCentered(100,118,"kanaly i historie.");
+    d.drawTextCentered(100,78,"Usunie konfigurację radia,");
+    d.drawTextCentered(100,98,"tożsamość, kontakty,");
+    d.drawTextCentered(100,118,"kanały i historię.");
     centeredChoice(d,"TAK","NIE");
     drawFooter(d, "v ZMIEN", "o POTWIERDZ");
   }
@@ -570,7 +570,7 @@ private:
     d.setTextSize(2);
     d.drawTextCentered(100,95,"RESET FABRYCZNY");
     d.setTextSize(1);
-    d.drawTextCentered(100,130,"Czyszczenie pamieci...");
+    d.drawTextCentered(100,130,"Czyszczenie pamięci...");
   }
 
   void renderHibernateSplash(DisplayDriver& d) {
@@ -579,17 +579,17 @@ private:
     d.setTextSize(2);
     d.drawTextCentered(100,120,"HIBERNACJA");
     d.setTextSize(1);
-    d.drawTextCentered(100,150,"Radio spi...");
+    d.drawTextCentered(100,150,"Radio śpi...");
   }
 
   void renderInfo(DisplayDriver& d) {
     title(d, "O SYSTEMIE");
     row(d, 72, "MeshCore", FIRMWARE_VERSION);
     row(d, 93, "Interfejs", "PB & ChatGPT v1.0");
-    row(d, 114, "Urzadzenie", "ThinkNode M1");
+    row(d, 114, "Urządzenie", "ThinkNode M1");
     row(d, 135, "MCU", "nRF52840");
     row(d, 156, "Radio", "SX1262");
-    row(d, 177, "Wyswietlacz", "e-Ink 200x200");
+    row(d, 177, "Wyświetlacz", "e-Ink 200x200");
     drawFooter(d, "v DALEJ", "");
   }
 
@@ -624,7 +624,7 @@ public:
         _task->shutdown(true);
       } else {
         _overlay = ADVANCED_MENU;
-        _task->showAlert("BLAD RESETU", 1200);
+        _task->showAlert("BŁĄD RESETU", 1200);
       }
     }
   }
@@ -707,7 +707,7 @@ public:
         if (_sel == 0) {
           _task->notify(UIEventType::ack);
           if (the_mesh.advert()) _overlay = ADVERT_SENT;
-          else { _overlay=RADIO_MENU; _task->showAlert("BLAD ADVERT",1200); }
+          else { _overlay=RADIO_MENU; _task->showAlert("BŁĄD ADVERT",1200); }
         } else _overlay = RADIO_MENU;
       }
       return true;
@@ -748,7 +748,7 @@ public:
           _previousTx=cur;
           radio_driver.setTxPower(_prefs->tx_power_dbm);
           the_mesh.savePrefs();
-          _task->showAlert("PRZYWROCONO MOC TX",1000);
+          _task->showAlert("PRZYWRÓCONO MOC TX",1000);
         }
         _overlay=RADIO_MENU;
       }
@@ -760,7 +760,7 @@ public:
       else if (c == KEY_PREV) _overlay=NONE;
       else if (c == KEY_ENTER) {
         if (_sel==0) _task->toggleGPS();
-        else if (_sel==1) _task->showAlert("POZYCJA ODSWIEZANA",900);
+        else if (_sel==1) _task->showAlert("POZYCJA ODŚWIEŻANA",900);
         else _overlay=NONE;
       }
       return true;
@@ -776,7 +776,7 @@ public:
           if (_task->isBluetoothEnabled()) {
             _task->disableBluetooth();
             _task->enableBluetooth();
-            _task->showAlert("BLE ROZLACZONY",900);
+            _task->showAlert("BLE ROZŁĄCZONY",900);
           }
         } else _overlay=NONE;
       }
@@ -838,7 +838,7 @@ public:
       else if (c == KEY_ENTER) {
         if (_sel<4) {
           _batteryWarnPct=vals[_sel];
-          _task->showAlert("PROG ZAPISANY W UI",900);
+          _task->showAlert("PRÓG ZAPISANY W UI",900);
         } else { _sel=0; _overlay=POWER_MENU; }
       }
       return true;
@@ -957,7 +957,7 @@ public:
     d.setTextSize(2);
     d.setColor(UIColor::primary_txt);
     d.setCursor(8, 48);
-    d.print("NOWA WIADOMOSC");
+    d.print("NOWA WIADOMOŚĆ");
 
     d.setTextSize(1);
     d.setCursor(8, 77);
@@ -968,10 +968,8 @@ public:
     d.drawTextRightAlign(192, 77, age);
     d.drawRect(6, 86, 188, 1);
 
-    char filtered[sizeof(p->msg)];
-    d.translateUTF8ToBlocks(filtered, p->msg, sizeof(filtered));
     d.setCursor(8, 108);
-    d.printWordWrap(filtered, 184);
+    d.printWordWrap(p->msg, 184);
 
     char countBuf[20];
     snprintf(countBuf, sizeof(countBuf), "%d nowych", num_unread);
@@ -1230,7 +1228,7 @@ void UITask::loop() {
         _display->drawTextCentered(100, 90, "BARDZO NISKI");
         _display->drawTextCentered(100, 118, "POZIOM BATERII");
         _display->setTextSize(1);
-        _display->drawTextCentered(100, 150, "Urzadzenie wylacza sie");
+        _display->drawTextCentered(100, 150, "Urządzenie wyłącza się");
         _display->endFrame();
       }
       shutdown();
@@ -1293,7 +1291,7 @@ void UITask::toggleGPS() {
         _node_prefs->gps_enabled = enabled ? 0 : 1;
         notify(UIEventType::ack);
         the_mesh.savePrefs();
-        showAlert(_node_prefs->gps_enabled ? "GPS WLACZONY" : "GPS WYLACZONY", 900);
+        showAlert(_node_prefs->gps_enabled ? "GPS WŁĄCZONY" : "GPS WYŁĄCZONY", 900);
         _next_refresh = 0;
         break;
       }
@@ -1311,7 +1309,7 @@ void UITask::toggleBuzzer() {
   }
   _node_prefs->buzzer_quiet = buzzer.isQuiet();
   the_mesh.savePrefs();
-  showAlert(buzzer.isQuiet() ? "DZWIEK WYL." : "DZWIEK WL.", 900);
+  showAlert(buzzer.isQuiet() ? "DŹWIĘK WYŁ." : "DŹWIĘK WŁ.", 900);
   _next_refresh = 0;
 #endif
 }
