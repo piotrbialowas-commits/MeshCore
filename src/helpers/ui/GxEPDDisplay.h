@@ -26,10 +26,17 @@ class GxEPDDisplay : public DisplayDriver {
   const float offset_y = EINK_Y_OFFSET;
 #else
   GxEPD2_BW<GxEPD2_150_BN, 200> display;
-  const float scale_x  = 1.5625f;
-  const float scale_y  = 1.5625f;
-  const float offset_x = 0;
-  const float offset_y = 10;
+  #if defined(THINKNODE_M1)
+    const float scale_x  = 1.0f;
+    const float scale_y  = 1.0f;
+    const float offset_x = 0;
+    const float offset_y = 0;
+  #else
+    const float scale_x  = 1.5625f;
+    const float scale_y  = 1.5625f;
+    const float offset_x = 0;
+    const float offset_y = 10;
+  #endif
 #endif
   bool _init = false;
   bool _isOn = false;
@@ -41,7 +48,11 @@ public:
 #if defined(EINK_DISPLAY_MODEL)
   GxEPDDisplay() : DisplayDriver(128, 128), display(EINK_DISPLAY_MODEL(PIN_DISPLAY_CS, PIN_DISPLAY_DC, PIN_DISPLAY_RST, PIN_DISPLAY_BUSY)) {}
 #else
-  GxEPDDisplay() : DisplayDriver(128, 128), display(GxEPD2_150_BN(DISP_CS, DISP_DC, DISP_RST, DISP_BUSY)) {}
+  #if defined(THINKNODE_M1)
+    GxEPDDisplay() : DisplayDriver(200, 200), display(GxEPD2_150_BN(DISP_CS, DISP_DC, DISP_RST, DISP_BUSY)) {}
+  #else
+    GxEPDDisplay() : DisplayDriver(128, 128), display(GxEPD2_150_BN(DISP_CS, DISP_DC, DISP_RST, DISP_BUSY)) {}
+  #endif
 #endif
 
   bool begin();
