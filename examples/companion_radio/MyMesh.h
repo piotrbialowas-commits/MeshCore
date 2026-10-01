@@ -100,6 +100,10 @@ public:
   bool advert();
   void enterCLIRescue();
 
+  // Read-only/UI helpers. They do not change the Companion protocol.
+  int getOfflineQueueLen() const { return offline_queue_len; }
+  bool factoryResetStorageFromUI();
+
   int  getRecentlyHeard(AdvertPath dest[], int max_num);
 
 protected:
