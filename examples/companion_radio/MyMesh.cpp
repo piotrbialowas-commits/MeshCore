@@ -2265,3 +2265,11 @@ bool MyMesh::advert() {
 bool MyMesh::hasPendingWork() const {
   return _mgr->getOutboundTotal() > 0 || dirty_contacts_expiry != 0;
 }
+
+
+bool MyMesh::factoryResetStorageFromUI() {
+  if (_serial) {
+    _serial->disable();
+  }
+  return _store->formatFileSystem();
+}
