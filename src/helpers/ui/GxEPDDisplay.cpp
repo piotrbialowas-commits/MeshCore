@@ -85,17 +85,35 @@ void GxEPDDisplay::startFrame(ColorVal bkg) {
 void GxEPDDisplay::setTextSize(int sz) {
   display_crc.update<int>(sz);
   _font_size = sz;
+  // M1 home screen uses the built-in 5x7 bitmap font for the pixel-art look.
+  // 0 = 1x pixel font, 4 = 4x pixel font, 5 = 2x pixel font.
   switch(sz) {
-    case 1:  // Small
+    case 0:
+      display.setFont(NULL);
+      display.setTextSize(1);
+      break;
+    case 1:
+      display.setTextSize(1);
       display.setFont(&FreeSans9pt7b);
       break;
-    case 2:  // Medium Bold
+    case 2:
+      display.setTextSize(1);
       display.setFont(&FreeSansBold12pt7b);
       break;
-    case 3:  // Large
+    case 3:
+      display.setTextSize(1);
       display.setFont(&FreeSans18pt7b);
       break;
+    case 4:
+      display.setFont(NULL);
+      display.setTextSize(4);
+      break;
+    case 5:
+      display.setFont(NULL);
+      display.setTextSize(2);
+      break;
     default:
+      display.setTextSize(1);
       display.setFont(&FreeSans9pt7b);
       break;
   }
