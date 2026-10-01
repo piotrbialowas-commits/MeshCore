@@ -1,5 +1,8 @@
 
 #include "GxEPDDisplay.h"
+#ifdef THINKNODE_M1
+  #include "PolishGlyphs.h"
+#endif
 
 #ifdef EXP_PIN_BACKLIGHT
   #include <PCA9557.h>
@@ -81,6 +84,7 @@ void GxEPDDisplay::startFrame(ColorVal bkg) {
 
 void GxEPDDisplay::setTextSize(int sz) {
   display_crc.update<int>(sz);
+  _font_size = sz;
   switch(sz) {
     case 1:  // Small
       display.setFont(&FreeSans9pt7b);
@@ -108,9 +112,152 @@ void GxEPDDisplay::setCursor(int x, int y) {
   display.setCursor((x+offset_x)*scale_x, (y+offset_y)*scale_y);
 }
 
+
+#ifdef THINKNODE_M1
+static uint16_t decodeUtf8Codepoint(const char* s, size_t len, size_t& i) {
+  uint8_t c = (uint8_t)s[i++];
+  if (c < 0x80) return c;
+  if ((c & 0xE0) == 0xC0 && i < len) {
+    uint8_t c2 = (uint8_t)s[i++];
+    if ((c2 & 0xC0) == 0x80) return ((uint16_t)(c & 0x1F) << 6) | (c2 & 0x3F);
+    return '?';
+  }
+  if ((c & 0xF0) == 0xE0 && i + 1 < len) {
+    uint8_t c2 = (uint8_t)s[i++];
+    uint8_t c3 = (uint8_t)s[i++];
+    if ((c2 & 0xC0) == 0x80 && (c3 & 0xC0) == 0x80) {
+      return ((uint16_t)(c & 0x0F) << 12) | ((uint16_t)(c2 & 0x3F) << 6) | (c3 & 0x3F);
+    }
+    return '?';
+  }
+  while (i < len && (((uint8_t)s[i] & 0xC0) == 0x80)) i++;
+  return '?';
+}
+
+static bool getPolishGlyphForSize(int fontSize, uint16_t cp, PolishGlyphBitmap& out, const uint8_t*& bitmap) {
+  const PolishGlyphBitmap* table = nullptr;
+  uint8_t count = 0;
+  if (fontSize == 2) {
+    table = PolishGlyphs2; count = PolishGlyphCount2; bitmap = PolishBitmap2;
+  } else if (fontSize == 3) {
+    table = PolishGlyphs3; count = PolishGlyphCount3; bitmap = PolishBitmap3;
+  } else {
+    table = PolishGlyphs1; count = PolishGlyphCount1; bitmap = PolishBitmap1;
+  }
+  for (uint8_t i = 0; i < count; i++) {
+    PolishGlyphBitmap g = table[i];
+    if (g.codepoint == cp) {
+      out = g;
+      return true;
+    }
+  }
+  return false;
+}
+
+static uint8_t baseAsciiForPolish(uint16_t cp) {
+  switch (cp) {
+    case 0x0104: case 0x0105: return (cp == 0x0104) ? 'A' : 'a';
+    case 0x0106: case 0x0107: return (cp == 0x0106) ? 'C' : 'c';
+    case 0x0118: case 0x0119: return (cp == 0x0118) ? 'E' : 'e';
+    case 0x0141: case 0x0142: return (cp == 0x0141) ? 'L' : 'l';
+    case 0x0143: case 0x0144: return (cp == 0x0143) ? 'N' : 'n';
+    case 0x00D3: case 0x00F3: return (cp == 0x00D3) ? 'O' : 'o';
+    case 0x015A: case 0x015B: return (cp == 0x015A) ? 'S' : 's';
+    case 0x0179: case 0x017A: return (cp == 0x0179) ? 'Z' : 'z';
+    case 0x017B: case 0x017C: return (cp == 0x017B) ? 'Z' : 'z';
+    default: return '?';
+  }
+}
+#endif
+
 void GxEPDDisplay::print(const char* str) {
+  if (str == nullptr) return;
   display_crc.update<char>(str, strlen(str));
+#ifdef THINKNODE_M1
+  const size_t len = strlen(str);
+  size_t i = 0;
+  while (i < len) {
+    uint16_t cp = decodeUtf8Codepoint(str, len, i);
+    if (cp < 0x80) {
+      display.write((uint8_t)cp);
+      continue;
+    }
+
+    PolishGlyphBitmap g;
+    const uint8_t* bitmap = nullptr;
+    if (getPolishGlyphForSize(_font_size, cp, g, bitmap)) {
+      int16_t x = display.getCursorX();
+      int16_t y = display.getCursorY();
+      display.drawBitmap(x + g.xOffset, y + g.yOffset, bitmap + g.offset, g.width, g.height, _curr_color);
+      display.setCursor(x + g.xAdvance, y);
+    } else {
+      display.write((uint8_t)'?');
+    }
+  }
+#else
   display.print(str);
+#endif
+}
+
+void GxEPDDisplay::printWordWrap(const char* str, int max_width) {
+#ifndef THINKNODE_M1
+  print(str);
+#else
+  if (str == nullptr || max_width <= 0) return;
+
+  const int16_t lineStartX = display.getCursorX();
+  int16_t lineY = display.getCursorY();
+  const int16_t lineHeight = (_font_size == 3) ? 42 : ((_font_size == 2) ? 29 : 22);
+  const int16_t rightEdge = lineStartX + max_width;
+
+  char word[128];
+  size_t wi = 0;
+  const char* p = str;
+
+  auto flushWord = [&]() {
+    if (wi == 0) return;
+    word[wi] = 0;
+    uint16_t ww = getTextWidth(word);
+    if (display.getCursorX() != lineStartX && display.getCursorX() + ww > rightEdge) {
+      lineY += lineHeight;
+      display.setCursor(lineStartX, lineY);
+    }
+    print(word);
+    wi = 0;
+  };
+
+  while (*p) {
+    if (*p == '\n') {
+      flushWord();
+      lineY += lineHeight;
+      display.setCursor(lineStartX, lineY);
+      p++;
+      continue;
+    }
+    if (*p == ' ' || *p == '\t') {
+      flushWord();
+      uint16_t sw = getTextWidth(" ");
+      if (display.getCursorX() + sw > rightEdge) {
+        lineY += lineHeight;
+        display.setCursor(lineStartX, lineY);
+      } else {
+        print(" ");
+      }
+      p++;
+      continue;
+    }
+
+    uint8_t c = (uint8_t)*p;
+    size_t bytes = 1;
+    if ((c & 0xE0) == 0xC0) bytes = 2;
+    else if ((c & 0xF0) == 0xE0) bytes = 3;
+    else if ((c & 0xF8) == 0xF0) bytes = 4;
+
+    if (wi + bytes >= sizeof(word) - 1) flushWord();
+    for (size_t k = 0; k < bytes && *p; k++) word[wi++] = *p++;
+  }
+  flushWord();
+#endif
 }
 
 void GxEPDDisplay::fillRect(int x, int y, int w, int h) {
@@ -171,10 +318,53 @@ void GxEPDDisplay::drawXbm(int x, int y, const uint8_t* bits, int w, int h) {
 }
 
 uint16_t GxEPDDisplay::getTextWidth(const char* str) {
+  if (str == nullptr || str[0] == 0) return 0;
+#ifndef THINKNODE_M1
   int16_t x1, y1;
   uint16_t w, h;
   display.getTextBounds(str, 0, 0, &x1, &y1, &w, &h);
   return ceil((w + 1) / scale_x);
+#else
+  bool hasUtf8 = false;
+  for (const uint8_t* p = (const uint8_t*)str; *p; ++p) {
+    if (*p >= 0x80) { hasUtf8 = true; break; }
+  }
+  if (!hasUtf8) {
+    int16_t x1, y1;
+    uint16_t w, h;
+    display.getTextBounds(str, 0, 0, &x1, &y1, &w, &h);
+    return w + 1;
+  }
+
+  char ascii[256];
+  size_t ai = 0;
+  int adjustment = 0;
+  size_t len = strlen(str), i = 0;
+  while (i < len && ai < sizeof(ascii) - 1) {
+    uint16_t cp = decodeUtf8Codepoint(str, len, i);
+    if (cp < 0x80) {
+      ascii[ai++] = (char)cp;
+      continue;
+    }
+
+    PolishGlyphBitmap g;
+    const uint8_t* bitmap = nullptr;
+    uint8_t base = baseAsciiForPolish(cp);
+    ascii[ai++] = (char)base;
+    if (getPolishGlyphForSize(_font_size, cp, g, bitmap)) {
+      char one[2] = {(char)base, 0};
+      int16_t bx, by; uint16_t bw, bh;
+      display.getTextBounds(one, 0, 0, &bx, &by, &bw, &bh);
+      adjustment += (int)g.xAdvance - (int)(bw + 1);
+    }
+  }
+  ascii[ai] = 0;
+
+  int16_t x1, y1; uint16_t w, h;
+  display.getTextBounds(ascii, 0, 0, &x1, &y1, &w, &h);
+  int result = (int)w + 1 + adjustment;
+  return result > 0 ? (uint16_t)result : 0;
+#endif
 }
 
 void GxEPDDisplay::endFrame() {
