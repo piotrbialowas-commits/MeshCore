@@ -3,6 +3,17 @@
 #include "../MyMesh.h"
 #include "target.h"
 #include <RTClib.h>
+#ifdef THINKNODE_M1
+  #include "M1UiAssets.h"
+  static uint8_t m1_ui_bitmap[5000];
+
+  static bool drawM1Artwork(DisplayDriver& d, const char* encoded) {
+    if (!decodeM1RleAsset(encoded, m1_ui_bitmap, sizeof(m1_ui_bitmap))) return false;
+    d.setColor(UIColor::primary_txt);
+    d.drawXbm(0, 0, m1_ui_bitmap, 200, 200);
+    return true;
+  }
+#endif
 
 #ifndef AUTO_OFF_MILLIS
   #define AUTO_OFF_MILLIS 15000
@@ -10,7 +21,11 @@
 
 #define BOOT_SCREEN_MILLIS 5000
 #define LONG_PRESS_MILLIS 1000
-#define UI_NODE_LIST_SIZE 8
+#ifdef THINKNODE_M1
+  #define UI_NODE_LIST_SIZE 32
+#else
+  #define UI_NODE_LIST_SIZE 8
+#endif
 
 #ifdef PIN_STATUS_LED
 #define LED_ON_MILLIS 20
@@ -72,20 +87,20 @@ public:
   SplashScreen(UITask* task) : _task(task), dismiss_after(millis() + BOOT_SCREEN_MILLIS) {}
 
   int render(DisplayDriver& d) override {
+#ifdef THINKNODE_M1
+    if (drawM1Artwork(d, M1_SPLASH_RLE_B64)) {
+      return 1000;
+    }
+#endif
+    // Fallback for non-M1 targets or a corrupt embedded asset.
     drawHeader(d, _task->getBattMilliVolts());
-
     d.setColor(UIColor::primary_txt);
-    d.drawRect(59, 43, 82, 55);
-    d.setTextSize(3);
-    d.drawTextCentered(100, 82, ":)");
-
     d.setTextSize(2);
-    d.drawTextCentered(100, 122, "WITAJ!");
-
+    d.drawTextCentered(100, 100, "WITAJ!");
     d.setTextSize(1);
-    d.drawTextCentered(100, 145, "Uruchamiam radio...");
-    d.drawTextCentered(100, 163, "MeshCore 1.17.1");
-    d.drawTextCentered(100, 178, "PB & ChatGPT v1.0");
+    d.drawTextCentered(100, 130, "Uruchamiam radio...");
+    d.drawTextCentered(100, 155, "MeshCore 1.17.1");
+    d.drawTextCentered(100, 176, "PB & ChatGPT v1.0");
     return 1000;
   }
 
@@ -202,12 +217,113 @@ private:
     uint32_t now = _rtc->getCurrentTime();
     DateTime dt(now);
 
+#ifdef THINKNODE_M1
+    if (drawM1Artwork(d, M1_HOME_RLE_B64)) {
+      d.setColor(UIColor::primary_txt);
+
+      // Battery: actual percentage and actual fill level.
+      const int batt = batteryPercent(_task->getBattMilliVolts());
+      d.setTextSize(1);
+      snprintf(buf, sizeof(buf), "%d%%", batt);
+      d.drawTextRightAlign(160, 16, buf);
+      d.drawRect(164, 4, 29, 13);
+      d.fillRect(193, 8, 4, 5);
+      int battFill = (batt * 25) / 100;
+      if (battFill > 0) d.fillRect(166, 6, battFill, 9);
+
+      // Radio panel on the right.
+      d.setTextSize(0);
+      snprintf(buf, sizeof(buf), "%.0fdBm", radio_driver.getLastRSSI());
+      d.setCursor(167, 37);
+      d.print(buf);
+      snprintf(buf, sizeof(buf), "%+.1fdB", radio_driver.getLastSNR());
+      d.setCursor(167, 46);
+      d.print(buf);
+
+      const int nodes = recentCount();
+      char rxAge[20];
+      if (nodes > 0) ageText(now, _recent[0].recv_timestamp, rxAge, sizeof(rxAge));
+      else snprintf(rxAge, sizeof(rxAge), "--");
+      d.setCursor(149, 64);
+      d.print(rxAge);
+
+      // Clock and date, in the chunky pixel style from the approved mock-up.
+      if (now > 100000) {
+        d.setTextSize(4);
+        snprintf(buf, sizeof(buf), "%02d:%02d", dt.hour(), dt.minute());
+        d.drawTextCentered(100, 80, buf);
+
+        static const char* DOW[] = {"NIE.", "PON.", "WT.", "SRO.", "CZW.", "PT.", "SOB."};
+        d.setTextSize(5);
+        snprintf(buf, sizeof(buf), "%s %02d.%02d.%04d",
+                 DOW[dt.dayOfTheWeek() % 7], dt.day(), dt.month(), dt.year());
+        d.drawTextCentered(100, 116, buf);
+      } else {
+        d.setTextSize(4);
+        d.drawTextCentered(100, 80, "--:--");
+        d.setTextSize(0);
+        d.drawTextCentered(100, 119, "BRAK SYNCHRONIZACJI");
+      }
+
+      // Unread messages badge.
+      int msgc = _task->getMsgCount();
+      d.setTextSize(0);
+      if (msgc > 99) snprintf(buf, sizeof(buf), "99+");
+      else snprintf(buf, sizeof(buf), "%d", msgc);
+      d.drawTextCentered(36, 139, buf);
+
+      // Recently heard nodes.
+      int shownNodes = nodes > 99 ? 99 : nodes;
+      d.setTextSize(5);
+      snprintf(buf, sizeof(buf), "%d", shownNodes);
+      d.drawTextCentered(151, 136, buf);
+
+      // BLE live state.
+      d.setTextSize(0);
+      if (_task->hasConnection()) {
+        d.fillRect(52, 168, 6, 6);
+        d.setCursor(25, 182);
+        d.print("POL.");
+      } else if (_task->isBluetoothEnabled()) {
+        d.drawRect(52, 168, 6, 6);
+        d.setCursor(25, 182);
+        d.print("GOTOWY");
+      } else {
+        d.setCursor(25, 182);
+        d.print("WYL.");
+      }
+
+      // GPS live state.
+      if (_task->getGPSState()) {
+        d.fillRect(111, 168, 6, 6);
+        d.setCursor(83, 182);
+        d.print("AKTYW.");
+      } else {
+        d.setCursor(83, 182);
+        d.print("WYL.");
+      }
+
+      // Current LoRa configuration.
+      d.setTextSize(0);
+      snprintf(buf, sizeof(buf), "%.3fMHz", _prefs->freq);
+      d.setCursor(147, 165);
+      d.print(buf);
+      snprintf(buf, sizeof(buf), "SF%u B%.0f", _prefs->sf, _prefs->bw);
+      d.setCursor(147, 175);
+      d.print(buf);
+      snprintf(buf, sizeof(buf), "TX %ddBm", _prefs->tx_power_dbm);
+      d.setCursor(147, 185);
+      d.print(buf);
+      return;
+    }
+#endif
+
+    // Generic fallback.
     d.setTextSize(1);
     d.setColor(UIColor::primary_txt);
     snprintf(buf, sizeof(buf), "RADIO RSSI %.0f  SNR %.1f", radio_driver.getLastRSSI(), radio_driver.getLastSNR());
     d.setCursor(6, 43);
     d.print(buf);
-
     if (now > 100000) {
       d.setTextSize(3);
       snprintf(buf, sizeof(buf), "%02d:%02d", dt.hour(), dt.minute());
@@ -215,28 +331,7 @@ private:
       d.setTextSize(1);
       snprintf(buf, sizeof(buf), "%02d.%02d.%04d", dt.day(), dt.month(), dt.year());
       d.drawTextCentered(100, 116, buf);
-    } else {
-      d.setTextSize(3);
-      d.drawTextCentered(100, 93, "--:--");
-      d.setTextSize(1);
-      d.drawTextCentered(100, 116, "brak synchronizacji");
     }
-
-    d.drawRect(5, 125, 190, 1);
-    int nodes = recentCount();
-    d.setTextSize(1);
-    snprintf(buf, sizeof(buf), "WIAD.: %d", _task->getMsgCount());
-    d.setCursor(8, 146);
-    d.print(buf);
-    snprintf(buf, sizeof(buf), "NODY: %d", nodes);
-    d.drawTextRightAlign(192, 146, buf);
-
-    const char* ble = _task->isBluetoothEnabled() ? (_task->hasConnection() ? "BLE: POL." : "BLE: WL.") : "BLE: WYL.";
-    const char* gps = _task->getGPSState() ? "GPS: WL." : "GPS: WYL.";
-    d.setCursor(8, 169);
-    d.print(ble);
-    d.drawTextRightAlign(192, 169, gps);
-    drawFooter(d, "v DALEJ", "");
   }
 
   void renderMessages(DisplayDriver& d) {
@@ -630,6 +725,13 @@ public:
   }
 
   int render(DisplayDriver& d) override {
+#ifdef THINKNODE_M1
+    // The artwork HOME contains its own header and separators.
+    if (_overlay == NONE && _page == HOME) {
+      renderHome(d);
+      return 30000;
+    }
+#endif
     drawHeader(d, _task->getBattMilliVolts());
     switch (_overlay) {
       case NODE_DETAIL: renderNodeDetail(d); break;
