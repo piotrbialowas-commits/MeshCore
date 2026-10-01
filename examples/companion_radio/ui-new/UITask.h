@@ -73,6 +73,8 @@ public:
   void begin(DisplayDriver* display, SensorManager* sensors, NodePrefs* node_prefs);
 
   void gotoHomeScreen() { setCurrScreen(home); }
+  void gotoMessagesScreen();
+  void gotoMessagePreview() { if (_msgcount > 0) setCurrScreen(msg_preview); }
   void showAlert(const char* text, int duration_millis);
   int  getMsgCount() const { return _msgcount; }
   bool hasDisplay() const { return _display != NULL; }
